@@ -10,6 +10,7 @@ public class PlayerIdleState : PlayerGroundedState
         player.StopMovement();
         player.ResolveFacingOnStop();
         player.PlayAnimation("Idle");
+        player.currentStateName = "Idle";
     }
 
     public override void PhysicsUpdate() => player.StopMovement();

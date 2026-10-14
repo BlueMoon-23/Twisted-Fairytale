@@ -24,6 +24,7 @@ public class PlayerParryState : PlayerState
         player.UpdateFacingFromInput(); // cùng quy tắc hướng với attack
         player.StopMovement();
         player.PlayAnimation("Interact", restart: true);
+        player.currentStateName = "Parry";
     }
 
     /// <summary>PlayerController.TakeDamage gọi khi đỡ trúng.</summary>

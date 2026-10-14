@@ -11,6 +11,8 @@ public class PlayerDashState : PlayerState
         player.UpdateFacingFromInput();
         dir = IsoDirection.ToVector(player.Facing);
         player.PlayAnimation("Jump", restart: true);
+        player.PlayerStamina.ConsumeStamina(10);
+        player.currentStateName = "Dash";
     }
 
     public override void LogicUpdate()
