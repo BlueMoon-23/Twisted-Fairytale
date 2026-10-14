@@ -14,6 +14,7 @@ public abstract class PlayerGroundedState : PlayerState
 
         // 1. Action có độ ưu tiên cao hơn locomotion (bật dần khi có state):
         if (player.Input.ConsumeDash())   { machine.ChangeState(player.DashState);   return; }
+        if (player.Input.ConsumeDodge())   { machine.ChangeState(player.DodgeState);   return; }
         if (player.Input.ConsumeParry())  { machine.ChangeState(player.ParryState);  return; }
         if (player.Input.ConsumeAttack()) { machine.ChangeState(player.AttackState); return; }
 

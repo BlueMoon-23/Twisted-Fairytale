@@ -9,6 +9,7 @@ public class PlayerRunState : PlayerGroundedState
         base.Enter();
         player.UpdateFacingFromInput();
         player.PlayAnimation("Run");
+        player.currentStateName = "Run";
     }
 
     protected override void OnStateUpdate()

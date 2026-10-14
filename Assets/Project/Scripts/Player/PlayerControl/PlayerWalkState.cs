@@ -9,6 +9,7 @@ public class PlayerWalkState : PlayerGroundedState
         base.Enter();
         player.UpdateFacingFromInput();
         player.PlayAnimation("Walk");
+        player.currentStateName = "Walk";
     }
 
     protected override void OnStateUpdate()

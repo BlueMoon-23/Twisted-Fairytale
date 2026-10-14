@@ -10,12 +10,16 @@ public class PlayerInputReader : MonoBehaviour
 {
     [Tooltip("Bấm sớm trong khoảng này vẫn được tính (vd: bấm dash khi đang attack)")]
     [SerializeField] private float bufferTime = 0.15f;
-
+    private PlayerController player;
     public Vector2 Move { get; private set; }
     public bool RunHeld { get; private set; }
 
-    private float attackTime = -1f, evadeTime = -1f, dashTime = -1f, parryTime = -1f;
+    private float attackTime = -1f, evadeTime = -1f, dashTime = -1f, dodgeTime = -1f, parryTime = -1f;
 
+    private void Awake()
+    {
+        player = GetComponent<PlayerController>();
+    }
     private void Update()
     {
         var kb = Keyboard.current;
@@ -28,7 +32,17 @@ public class PlayerInputReader : MonoBehaviour
         if (kb.wKey.isPressed) y += 1f;
         Move = new Vector2(x, y);
         RunHeld = kb.leftShiftKey.isPressed;
-        if (kb.cKey.wasPressedThisFrame) dashTime = Time.time;
+        if (kb.cKey.wasPressedThisFrame)
+        {
+            if (player.currentStateName == "PlayerRunState")
+            {
+                if (!player.PlayerStamina.IsTired(10)) dashTime = Time.time;
+            }
+            else
+            {
+                if (!player.PlayerStamina.IsTired(10)) dodgeTime = Time.time;
+            }
+        }
         if (kb.fKey.wasPressedThisFrame) parryTime = Time.time;
         if (mouse != null && mouse.leftButton.wasPressedThisFrame) attackTime = Time.time;
     }
@@ -36,6 +50,7 @@ public class PlayerInputReader : MonoBehaviour
     // Consume = lấy và xoá, tránh 1 lần bấm kích hoạt 2 lần
     public bool ConsumeAttack() => Consume(ref attackTime);
     public bool ConsumeDash() => Consume(ref dashTime);
+    public bool ConsumeDodge() => Consume(ref dodgeTime);
     public bool ConsumeEvade() => Consume(ref evadeTime);
     public bool ConsumeParry() => Consume(ref parryTime);
 

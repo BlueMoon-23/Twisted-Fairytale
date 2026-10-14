@@ -42,6 +42,7 @@ public class PlayerAttackState : PlayerState
         hitFilter.SetLayerMask(player.attackHitMask);
 
         player.PlayAnimation("Punch", restart: true);
+        player.currentStateName = "Attack";
     }
 
     public override void LogicUpdate()

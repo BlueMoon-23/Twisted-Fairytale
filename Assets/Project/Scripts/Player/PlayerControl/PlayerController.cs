@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -47,6 +48,9 @@ public class PlayerController : MonoBehaviour
     public float parryDuration = 0.45f;
     [Tooltip("Thời gian khựng lại sau khi đỡ thành công, trước khi điều khiển lại")]
     public float parrySuccessRecovery = 0.1f;
+    // Die
+    [Header("Die")]
+    public float deathSequenceTime = 1.5f;
     // Isometric directions
     [Tooltip("0.5 cho isometric tile 2:1. 1 = top-down thường")]
     [SerializeField] private float isoYScale = 0.5f;
@@ -65,7 +69,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private bool artFacesRight = true;
 
     [Header("Debug (read only)")]
-    [SerializeField] private string currentStateName;
+    [field: SerializeField] public string currentStateName { get; set; }
 
     public Rigidbody2D Rb { get; private set; }
     public PlayerInputReader Input { get; private set; }
@@ -81,6 +85,15 @@ public class PlayerController : MonoBehaviour
     public PlayerDashState DashState { get; private set; }
     public PlayerDodgeState DodgeState { get; private set; }
     public PlayerParryState ParryState { get; private set; }
+    public PlayerDieState DieState { get; private set; }
+
+    // ===== Stats =====
+    public PlayerHP PlayerHP { get; private set; }
+    public PlayerStamina PlayerStamina { get; private set; }
+
+    public event Action Died;
+    public event Action DeathSequenceFinished;
+    public bool IsDead => Machine.Current == DieState;
 
     private Dir8 lastDiagonal;
     private float lastDiagonalTime = float.NegativeInfinity;
@@ -106,6 +119,9 @@ public class PlayerController : MonoBehaviour
         DashState = new PlayerDashState(this, Machine);
         DodgeState = new PlayerDodgeState(this, Machine);
         ParryState = new PlayerParryState(this, Machine);
+        DieState = new PlayerDieState(this, Machine);
+        PlayerHP = GetComponent<PlayerHP>();
+        PlayerStamina = GetComponent<PlayerStamina>();
     }
 
     private void Start()
@@ -188,7 +204,27 @@ public class PlayerController : MonoBehaviour
     // ===== Attack/Parry =====
     public Vector2 AttackHitboxCenter
     => Rb.position + IsoDirection.ToIso(IsoDirection.ToVector(Facing), isoYScale) * attackReach;
-    
+
+    // ===== Die =====
+    public void Die()
+    {
+        if (IsDead) return;
+        Machine.ChangeState(DieState);
+    }
+
+    public void Revive(Vector2 position)
+    {
+        if (!IsDead) return;
+        Rb.position = position;
+        transform.position = position;
+        Facing = startFacing;
+        Machine.ChangeState(IdleState);
+        PlayerHP.RegainHP(PlayerHP.GetMaxHP());
+    }
+
+    public void RaiseDied() => Died?.Invoke();
+    public void RaiseDeathSequenceFinished() => DeathSequenceFinished?.Invoke();
+
     // ===== Animation =====
     /// <summary>
     /// Chơi clip "{baseName}_{hướng}" theo Facing và lật sprite.

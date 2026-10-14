@@ -13,6 +13,8 @@ public class PlayerDodgeState : PlayerState
         dir = IsoDirection.ToVector(player.Facing);
         player.IsInvulnerable = true;
         player.PlayAnimation("Dodge", restart: true);
+        player.PlayerStamina.ConsumeStamina(10);
+        player.currentStateName = "Dodge";
     }
 
     public override void LogicUpdate()
