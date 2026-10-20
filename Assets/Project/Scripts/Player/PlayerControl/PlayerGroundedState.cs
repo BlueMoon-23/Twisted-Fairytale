@@ -16,7 +16,7 @@ public abstract class PlayerGroundedState : PlayerState
         if (player.Input.ConsumeDash())   { machine.ChangeState(player.DashState);   return; }
         if (player.Input.ConsumeDodge())   { machine.ChangeState(player.DodgeState);   return; }
         if (player.Input.ConsumeParry())  { machine.ChangeState(player.ParryState);  return; }
-        if (player.Input.ConsumeAttack()) { machine.ChangeState(player.AttackState); return; }
+        if (player.TryAttack()) { return; }
 
         // 2. Locomotion: Idle <-> Walk <-> Run
         PlayerState desired = player.GetLocomotionState();

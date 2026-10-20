@@ -28,18 +28,9 @@ public class PlayerController : MonoBehaviour
     private float evadeReadyTime;
     // Attack / Parry 
     [Header("Attack (chuột trái)")]
-    [Tooltip("Tổng thời gian đòn đánh. Nên = độ dài clip Attack")]
-    public float attackDuration = 0.4f;
-    [Tooltip("Hitbox bật trong khoảng [start, end] (giây tính từ đầu đòn)")]
-    public float attackHitStart = 0.12f;
-    public float attackHitEnd = 0.22f;
-    [Tooltip("Sau mốc này được nối đòn (bấm chuột tiếp) hoặc huỷ bằng dash/dodge")]
-    public float attackCancelTime = 0.25f;
-    [Tooltip("Lướt tới trước trong lúc vung đòn")]
-    public float attackLungeSpeed = 1.5f;
+    public PlayerAttackData normalAttack;
+    public PlayerAttackData heavyAttack;
     public float attackReach = 0.35f;
-    public float attackRadius = 0.3f;
-    public int attackDamage = 1;
     public LayerMask attackHitMask;
     [Header("Parry (F)")]
     [Tooltip("Khoảng đỡ được đòn tính từ đầu parry")]
@@ -204,6 +195,23 @@ public class PlayerController : MonoBehaviour
     // ===== Attack/Parry =====
     public Vector2 AttackHitboxCenter
     => Rb.position + IsoDirection.ToIso(IsoDirection.ToVector(Facing), isoYScale) * attackReach;
+    /// <summary>Đòn ứng với nút vừa bấm (heavy ưu tiên), null nếu không bấm gì.</summary>
+    public PlayerAttackData ConsumeAttackInput()
+    {
+        if (Input.ConsumeHeavyAttack()) return heavyAttack;
+        if (Input.ConsumeAttack()) return normalAttack;
+        return null;
+    }
+
+    /// <summary>Gọi từ Idle/Walk/Run: có bấm đánh thì vào AttackState với đúng đòn.</summary>
+    public bool TryAttack()
+    {
+        var attack = ConsumeAttackInput();
+        if (attack == null) return false;
+        AttackState.SetAttack(attack);
+        Machine.ChangeState(AttackState);
+        return true;
+    }
 
     // ===== Die =====
     public void Die()
