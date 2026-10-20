@@ -9,22 +9,13 @@ using UnityEngine;
 /// </summary>
 public class PlayerAttackState : PlayerState
 {
-    public bool HitboxActive { get; private set; }
-    /// <summary>Số nhát đã nối liên tiếp (0 = nhát đầu). Sau này dùng để đổi clip combo.</summary>
-    public int ComboIndex { get; private set; }
-
     private Vector2 dir;
-    private readonly HashSet<IDamageable> alreadyHit = new();
-    private readonly List<Collider2D> overlapResults = new();
-    private ContactFilter2D hitFilter;
-
+    private PlayerAttackData current;
+    private HitDealer attackSpawned;
+    private bool hasSpawnedAttack;
     public PlayerAttackState(PlayerController p, PlayerStateMachine m) : base(p, m) { }
-
-    public override void Enter()
-    {
-        ComboIndex = 0;
-        BeginSwing();
-    }
+    public void SetAttack(PlayerAttackData data) => current = data;
+    public override void Enter() => BeginSwing();
 
     private void BeginSwing()
     {
@@ -35,58 +26,40 @@ public class PlayerAttackState : PlayerState
         player.UpdateFacingFromInput();
 
         dir = IsoDirection.ToVector(player.Facing);
-        alreadyHit.Clear();
-        HitboxActive = false;
-
-        hitFilter = new ContactFilter2D { useTriggers = true };
-        hitFilter.SetLayerMask(player.attackHitMask);
-
+        hasSpawnedAttack = false;
         player.PlayAnimation("Punch", restart: true);
         player.currentStateName = "Attack";
     }
-
     public override void LogicUpdate()
     {
         base.LogicUpdate();
 
-        HitboxActive = StateTime >= player.attackHitStart && StateTime <= player.attackHitEnd;
-        if (HitboxActive) DoHitCheck();
-
-        if (StateTime >= player.attackCancelTime)
+        if (!hasSpawnedAttack && StateTime >= current.HitStart)
         {
-            if (player.TryEvade()) return;
-
-            if (player.Input.ConsumeAttack())
-            {
-                ComboIndex++;
-                BeginSwing();
-                return;
-            }
+            hasSpawnedAttack = true;
+            attackSpawned = Object.Instantiate(current.Prefab, player.AttackHitboxCenter, Quaternion.identity, player.transform);
+            attackSpawned.Init(player.gameObject, current.Damage, player.attackHitMask,
+            current.HitEnd - current.HitStart);
         }
+        if (StateTime < current.Duration) return; // đòn chưa xong: bỏ qua mọi input
 
-        if (StateTime >= player.attackDuration)
-            machine.ChangeState(player.GetLocomotionState());
+        if (player.TryEvade()) return;
+        var next = player.ConsumeAttackInput();
+        if (next != null)
+        {
+            current = next;
+            BeginSwing();
+            return;
+        }
+        machine.ChangeState(player.GetLocomotionState());
     }
-
     public override void PhysicsUpdate()
     {
-        if (StateTime < player.attackHitEnd) player.MoveInDirection(dir, player.attackLungeSpeed);
+        if (StateTime < current.HitEnd) player.MoveInDirection(dir, current.LungeSpeed);
         else player.StopMovement();
     }
-
-    public override void Exit() => HitboxActive = false;
-
-    private void DoHitCheck()
+    public override void Exit()
     {
-        int count = Physics2D.OverlapCircle(player.AttackHitboxCenter, player.attackRadius, hitFilter, overlapResults);
-        for (int i = 0; i < count; i++)
-        {
-            var col = overlapResults[i];
-            if (col.attachedRigidbody == player.Rb) continue; // không tự đánh mình
-
-            var target = col.GetComponentInParent<IDamageable>();
-            if (target != null && alreadyHit.Add(target))
-                target.TakeDamage(player.attackDamage, player.gameObject);
-        }
+        if (attackSpawned != null) Object.Destroy(attackSpawned.gameObject);
     }
 }

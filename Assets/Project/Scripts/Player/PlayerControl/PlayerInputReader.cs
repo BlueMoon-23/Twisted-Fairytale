@@ -14,7 +14,7 @@ public class PlayerInputReader : MonoBehaviour
     public Vector2 Move { get; private set; }
     public bool RunHeld { get; private set; }
 
-    private float attackTime = -1f, evadeTime = -1f, dashTime = -1f, dodgeTime = -1f, parryTime = -1f;
+    private float attackTime = -1f, heavyAttackTime = -1f, evadeTime = -1f, dashTime = -1f, dodgeTime = -1f, parryTime = -1f;
 
     private void Awake()
     {
@@ -45,10 +45,12 @@ public class PlayerInputReader : MonoBehaviour
         }
         if (kb.fKey.wasPressedThisFrame) parryTime = Time.time;
         if (mouse != null && mouse.leftButton.wasPressedThisFrame) attackTime = Time.time;
+        if (kb.ctrlKey.wasPressedThisFrame) heavyAttackTime = Time.time;
     }
 
     // Consume = lấy và xoá, tránh 1 lần bấm kích hoạt 2 lần
     public bool ConsumeAttack() => Consume(ref attackTime);
+    public bool ConsumeHeavyAttack() => Consume(ref heavyAttackTime);
     public bool ConsumeDash() => Consume(ref dashTime);
     public bool ConsumeDodge() => Consume(ref dodgeTime);
     public bool ConsumeEvade() => Consume(ref evadeTime);
