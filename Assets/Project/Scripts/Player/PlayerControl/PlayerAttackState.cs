@@ -30,6 +30,7 @@ public class PlayerAttackState : PlayerState
         player.PlayAnimation("Punch", restart: true);
         player.currentStateName = "Attack";
     }
+    
     public override void LogicUpdate()
     {
         base.LogicUpdate();

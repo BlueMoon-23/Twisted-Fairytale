@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f8627df608641b241b410bf5e2ade1d9, type: 3}
-  m_Name: PlayerSwordHeavyAttack
+  m_Name: GreatswordNormalAttack
   m_EditorClassIdentifier: 
   AnimName: Punch
   Duration: 0.4
   HitStart: 0.12
   HitEnd: 0.22
   LungeSpeed: 1.5
-  Damage: 1
-  Prefab: {fileID: 2171183415028546117, guid: 0fc91729b3ed4b24fa8ab4aae9feb06d, type: 3}
+  Damage: 2
+  Prefab: {fileID: 4843126271447254351, guid: 21092229882d8dd4093d4c015a52d2e2, type: 3}

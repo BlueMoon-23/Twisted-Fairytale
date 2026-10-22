@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f8627df608641b241b410bf5e2ade1d9, type: 3}
+  m_Name: SpearNormalAttack
+  m_EditorClassIdentifier: 
+  AnimName: Punch
+  Duration: 0.4
+  HitStart: 0.12
+  HitEnd: 0.22
+  LungeSpeed: 1.5
+  Damage: 1
+  Prefab: {fileID: 1606457656485342007, guid: bbeafece2f11a0b47b3372894909c294, type: 3}
