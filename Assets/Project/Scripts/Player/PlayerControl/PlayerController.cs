@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -26,7 +25,7 @@ public class PlayerController : MonoBehaviour
     public bool IsInvulnerable { get; set; }
     public bool CanEvade => Time.time >= evadeReadyTime;
     private float evadeReadyTime;
-    // Attack / Parry 
+    // Attack / Parry
     [Header("Attack (chuột trái)")]
     public PlayerAttackData normalAttack;
     public PlayerAttackData heavyAttack;
@@ -43,9 +42,10 @@ public class PlayerController : MonoBehaviour
     [Header("Die")]
     public float deathSequenceTime = 1.5f;
     // Isometric directions
+    [Header("Isometric")]
     [Tooltip("0.5 cho isometric tile 2:1. 1 = top-down thường")]
     [SerializeField] private float isoYScale = 0.5f;
-    [Tooltip("Ép hướng di chuyển về đúng 8 hướng để khớp animation (quan trọng với gamepad)")]
+    [Tooltip("Ép hướng di chuyển về đúng 8 hướng để khớp animation")]
     [SerializeField] private bool snapTo8Directions = true;
     [SerializeField] private float inputDeadzone = 0.2f;
     [Header("Facing")]
@@ -55,9 +55,6 @@ public class PlayerController : MonoBehaviour
     // Animation
     [Header("Animation")]
     [SerializeField] private Animator animator;
-    [SerializeField] private SpriteRenderer spriteRenderer;
-    [Tooltip("Bật nếu clip *_Side trong art gốc quay mặt sang PHẢI")]
-    [SerializeField] private bool artFacesRight = true;
 
     [Header("Debug (read only)")]
     [field: SerializeField] public string currentStateName { get; set; }
@@ -89,9 +86,12 @@ public class PlayerController : MonoBehaviour
     private Dir8 lastDiagonal;
     private float lastDiagonalTime = float.NegativeInfinity;
 
-    // Cache hash theo tên gốc: "Walk" -> [Walk_Down, Walk_Down_Side, Walk_Side, Walk_Up_Side, Walk_Up]
-    private readonly Dictionary<string, int[]> animHashes = new();
-    private int currentAnimHash;
+    // Tham số blend tree (Float) trong Animator
+    private static readonly int FaceXParam = Animator.StringToHash("FaceX");
+    private static readonly int FaceYParam = Animator.StringToHash("FaceY");
+    private int currentStateHash;
+
+    private Camera cam;
 
     private void Awake()
     {
@@ -100,7 +100,7 @@ public class PlayerController : MonoBehaviour
         Rb.freezeRotation = true;
         Input = GetComponent<PlayerInputReader>();
         if (animator == null) animator = GetComponentInChildren<Animator>();
-        if (spriteRenderer == null) spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        cam = Camera.main;
 
         Machine = new PlayerStateMachine();
         IdleState = new PlayerIdleState(this, Machine);
@@ -125,13 +125,17 @@ public class PlayerController : MonoBehaviour
     {
         Machine.Current.LogicUpdate();
         currentStateName = Machine.Current.ToString();
+        UpdateAnimatorFacing();
     }
+
     private void LateUpdate()
     {
+        if (cam == null) return;
         Vector3 newPosition = transform.position;
         newPosition.z = -10f; // Ép camera lùi lại Z = -10 để nhìn thấy nhân vật
-        Camera.main.transform.position = newPosition;
+        cam.transform.position = newPosition;
     }
+
     private void FixedUpdate() => Machine.Current.PhysicsUpdate();
 
     // ===== Input helpers =====
@@ -164,7 +168,6 @@ public class PlayerController : MonoBehaviour
             Facing = lastDiagonal;
     }
 
-    /// <summary>Cho sau này: attack hướng theo chuột, bị đánh bật lùi...</summary>
     public void SetFacing(Dir8 dir) => Facing = dir;
 
     // ===== Movement =====
@@ -190,11 +193,13 @@ public class PlayerController : MonoBehaviour
         Machine.ChangeState(running ? DashState : DodgeState);
         return true;
     }
+
     public void StartEvadeCooldown() => evadeReadyTime = Time.time + evadeCooldown;
 
     // ===== Attack/Parry =====
     public Vector2 AttackHitboxCenter
-    => Rb.position + IsoDirection.ToIso(IsoDirection.ToVector(Facing), isoYScale) * attackReach;
+        => Rb.position + IsoDirection.ToIso(IsoDirection.ToVector(Facing), isoYScale) * attackReach;
+
     /// <summary>Đòn ứng với nút vừa bấm (heavy ưu tiên), null nếu không bấm gì.</summary>
     public PlayerAttackData ConsumeAttackInput()
     {
@@ -233,54 +238,43 @@ public class PlayerController : MonoBehaviour
     public void RaiseDied() => Died?.Invoke();
     public void RaiseDeathSequenceFinished() => DeathSequenceFinished?.Invoke();
 
-    // ===== Animation =====
+    // ===== Animation (Blend Tree 8 hướng) =====
     /// <summary>
-    /// Chơi clip "{baseName}_{hướng}" theo Facing và lật sprite.
-    /// Gọi mỗi frame cũng được: clip không đổi thì bỏ qua.
-    /// Đổi hướng giữa cùng loại (Walk_Side -> Walk_Up_Side) vẫn giữ nhịp bước chân.
+    /// Chuyển sang blend tree của hành động ("Idle", "Walk", "Run", "Punch"...).
+    /// Hướng do blend tree tự chọn qua FaceX/FaceY nên không cần truyền.
+    /// Gọi mỗi frame cũng được: state không đổi thì bỏ qua.
     /// </summary>
-    public void PlayAnimation(string baseName, bool restart = false)
+    public void PlayAnimation(string stateName, bool restart = false)
     {
-        var (index, flip) = IsoDirection.ToAnim(Facing);
-        spriteRenderer.flipX = artFacesRight ? flip : !flip;
+        int hash = Animator.StringToHash(stateName);
+        if (hash == currentStateHash && !restart) return;
 
-        int[] hashes = GetAnimHashes(baseName);
-        int hash = hashes[index];
-        if (hash == currentAnimHash && !restart) return;
+        if (!animator.HasState(0, hash))
+        {
+            Debug.LogWarning($"[PlayerController] Animator chưa có state '{stateName}'", this);
+            return;
+        }
 
-        float startTime = 0f;
-        if (!restart && System.Array.IndexOf(hashes, currentAnimHash) >= 0)
-            startTime = animator.GetCurrentAnimatorStateInfo(0).normalizedTime % 1f;
-
-        animator.Play(hash, 0, startTime);
-        currentAnimHash = hash;
+        UpdateAnimatorFacing(); // set hướng trước khi Play để frame đầu đúng clip
+        animator.Play(hash, 0, 0f);
+        currentStateHash = hash;
     }
 
-    /// <summary>Cho clip không loop (attack, parry...): đã chạy hết chưa.</summary>
+    /// <summary>Cho clip không loop (attack, parry, die...): đã chạy hết chưa.</summary>
     public bool IsAnimationFinished
     {
         get
         {
             var info = animator.GetCurrentAnimatorStateInfo(0);
-            return info.shortNameHash == currentAnimHash && info.normalizedTime >= 1f;
+            return info.shortNameHash == currentStateHash && info.normalizedTime >= 1f;
         }
     }
 
-    private int[] GetAnimHashes(string baseName)
+    /// <summary>Gửi hướng hiện tại cho blend tree.</summary>
+    private void UpdateAnimatorFacing()
     {
-        if (animHashes.TryGetValue(baseName, out var hashes)) return hashes;
-
-        hashes = new int[IsoDirection.AnimSuffixes.Length];
-        for (int i = 0; i < hashes.Length; i++)
-        {
-            string stateName = $"{baseName}_{IsoDirection.AnimSuffixes[i]}";
-            hashes[i] = Animator.StringToHash(stateName);
-#if UNITY_EDITOR
-            if (!animator.HasState(0, hashes[i]))
-                Debug.LogWarning($"[PlayerController] Animator thiếu state '{stateName}'", this);
-#endif
-        }
-        animHashes[baseName] = hashes;
-        return hashes;
+        Vector2 dir = IsoDirection.ToVector(Facing);
+        animator.SetFloat(FaceXParam, dir.x);
+        animator.SetFloat(FaceYParam, dir.y);
     }
 }
