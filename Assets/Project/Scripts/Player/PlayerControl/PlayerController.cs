@@ -9,7 +9,6 @@ public class PlayerController : MonoBehaviour
 {
     // General stats
     [Header("Movement")]
-    public float walkSpeed = 2f;
     public float runSpeed = 4f;
     // Dash / Dodge
     [Header("Dash (C khi đang Run)")]
@@ -29,6 +28,8 @@ public class PlayerController : MonoBehaviour
     [Header("Attack (chuột trái)")]
     public PlayerAttackData normalAttack;
     public PlayerAttackData heavyAttack;
+    [Header("Ultimate (nút R)")]
+    public PlayerAttackData ultimateAttack;
     public float attackReach = 0.35f;
     public LayerMask attackHitMask;
     [Header("Parry (F)")]
@@ -67,7 +68,6 @@ public class PlayerController : MonoBehaviour
 
     // ===== States =====
     public PlayerIdleState IdleState { get; private set; }
-    public PlayerWalkState WalkState { get; private set; }
     public PlayerRunState RunState { get; private set; }
     public PlayerAttackState AttackState { get; private set; }
     public PlayerDashState DashState { get; private set; }
@@ -104,7 +104,6 @@ public class PlayerController : MonoBehaviour
 
         Machine = new PlayerStateMachine();
         IdleState = new PlayerIdleState(this, Machine);
-        WalkState = new PlayerWalkState(this, Machine);
         RunState = new PlayerRunState(this, Machine);
         AttackState = new PlayerAttackState(this, Machine);
         DashState = new PlayerDashState(this, Machine);
@@ -146,7 +145,7 @@ public class PlayerController : MonoBehaviour
     public PlayerState GetLocomotionState()
     {
         if (!HasMoveInput) return IdleState;
-        return Input.RunHeld ? RunState : WalkState;
+        return RunState;
     }
 
     // ===== Facing =====

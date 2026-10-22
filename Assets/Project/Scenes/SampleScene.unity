@@ -13865,16 +13865,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 360b975568f593142bfedbac0b92844f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  walkSpeed: 6
-  runSpeed: 12
-  dashSpeed: 9
+  runSpeed: 9
+  dashSpeed: 24
   dashDuration: 0.5
-  dodgeSpeed: 6
+  dodgeSpeed: 12
   dodgeDuration: 0.3
   dodgeIFrames: 0.25
   evadeCooldown: 0.3
   normalAttack: {fileID: 11400000, guid: 11e910d607e1fe74aafb87419bcdcd7a, type: 2}
   heavyAttack: {fileID: 11400000, guid: 4eca86ed2f1345d47823bb830c066a2d, type: 2}
+  ultimateAttack: {fileID: 11400000, guid: c8196e0053651bb448ed79fc87790d49, type: 2}
   attackReach: 0.35
   attackHitMask:
     serializedVersion: 2
@@ -13908,6 +13908,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   bufferTime: 0.15
+  tapMaxTime: 0.2
+  fullChargeTime: 1
+  autoReleaseAtFullCharge: 1
 --- !u!50 &1620471361
 Rigidbody2D:
   serializedVersion: 5
@@ -14016,6 +14019,22 @@ CapsuleCollider2D:
   m_Offset: {x: 0, y: 0.08}
   m_Size: {x: 0.12, y: 0.16}
   m_Direction: 0
+--- !u!114 &1620471370
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1620471355}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d74030c89c9cf949adec381101a71e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  WeaponEquipped:
+  - {fileID: 11400000, guid: 517620600e0217d4e8ac0965198e1f81, type: 2}
+  - {fileID: 11400000, guid: 9bc516e69e61d404a9a62a63bba06604, type: 2}
+  - {fileID: 11400000, guid: e85438f6c19d9e34bb14792ae99497b1, type: 2}
 --- !u!1 &1654435766
 GameObject:
   m_ObjectHideFlags: 0
@@ -14270,6 +14289,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: -2253911629886400664, guid: ae3c3c2757932b3448c7dc2252f2fdd9, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1620471367}
+    - targetCorrespondingSourceObject: {fileID: -2253911629886400664, guid: ae3c3c2757932b3448c7dc2252f2fdd9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1620471370}
   m_SourcePrefab: {fileID: -8435245712485981826, guid: ae3c3c2757932b3448c7dc2252f2fdd9, type: 3}
 --- !u!1 &1846279146
 GameObject:
