@@ -5,7 +5,7 @@ using UnityEngine;
 /// "Context" của FSM: giữ component, thông số, và các hàm dùng chung cho mọi state.
 /// Bản thân class này KHÔNG chứa logic chuyển state - việc đó thuộc về từng state.
 /// </summary>
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour, IRespawnable
 {
     // General stats
     [Header("Movement")]
@@ -42,6 +42,12 @@ public class PlayerController : MonoBehaviour
     // Die
     [Header("Die")]
     public float deathSequenceTime = 1.5f;
+    // Respawn
+    [Header("Respawn")]
+    [Tooltip("Tắt: chết xong đứng im, chỉ hồi sinh khi gọi Revive (vd: phím K)")]
+    [SerializeField] private bool autoRespawn = true;
+    [Tooltip("Số giây chờ thêm sau DeathSequenceFinished rồi mới hồi sinh")]
+    [SerializeField] private float respawnDelay = 0f;
     // Isometric directions
     [Header("Isometric")]
     [Tooltip("0.5 cho isometric tile 2:1. 1 = top-down thường")]
@@ -65,6 +71,7 @@ public class PlayerController : MonoBehaviour
     public Animator Animator => animator;
     public PlayerStateMachine Machine { get; private set; }
     public Dir8 Facing { get; private set; }
+    public float IsoYScale => isoYScale; // projectile dùng để bay đúng tỉ lệ iso với nhân vật
 
     // ===== States =====
     public PlayerIdleState IdleState { get; private set; }
@@ -82,6 +89,12 @@ public class PlayerController : MonoBehaviour
     public event Action Died;
     public event Action DeathSequenceFinished;
     public bool IsDead => Machine.Current == DieState;
+
+    // ===== IRespawnable =====
+    public bool UsesCheckpoint => true;   // player chạm checkpoint là đổi điểm hồi sinh
+    public Spawner HomeSpawner => null;   // player không có spawner riêng, luôn dùng checkpoint
+    public Vector2 InitialPosition { get; private set; }
+    public void Respawn(Vector2 position) => Revive(position);
 
     private Dir8 lastDiagonal;
     private float lastDiagonalTime = float.NegativeInfinity;
@@ -101,6 +114,7 @@ public class PlayerController : MonoBehaviour
         Input = GetComponent<PlayerInputReader>();
         if (animator == null) animator = GetComponentInChildren<Animator>();
         cam = Camera.main;
+        InitialPosition = transform.position;
 
         Machine = new PlayerStateMachine();
         IdleState = new PlayerIdleState(this, Machine);
@@ -118,6 +132,12 @@ public class PlayerController : MonoBehaviour
     {
         Facing = startFacing;
         Machine.Initialize(IdleState);
+        DeathSequenceFinished += HandleDeathSequenceFinished;
+    }
+
+    private void OnDestroy()
+    {
+        DeathSequenceFinished -= HandleDeathSequenceFinished;
     }
 
     private void Update()
@@ -217,7 +237,7 @@ public class PlayerController : MonoBehaviour
         return true;
     }
 
-    // ===== Die =====
+    // ===== Die / Respawn =====
     public void Die()
     {
         if (IsDead) return;
@@ -232,6 +252,20 @@ public class PlayerController : MonoBehaviour
         Facing = startFacing;
         Machine.ChangeState(IdleState);
         PlayerHP.RegainHP(PlayerHP.GetMaxHP());
+    }
+
+    // Vị trí hồi sinh hiện tại: checkpoint nếu có SpawnerManager, không thì chỗ đứng lúc vào scene
+    public Vector2 GetRespawnPosition()
+        => SpawnerManager.Instance != null ? SpawnerManager.Instance.GetSpawnPosition(this) : InitialPosition;
+
+    private void HandleDeathSequenceFinished()
+    {
+        if (!autoRespawn) return;
+
+        if (SpawnerManager.Instance != null)
+            SpawnerManager.Instance.ScheduleRespawn(this, respawnDelay);
+        else
+            Revive(InitialPosition); // scene không có SpawnerManager: hồi sinh ngay tại chỗ ban đầu
     }
 
     public void RaiseDied() => Died?.Invoke();
