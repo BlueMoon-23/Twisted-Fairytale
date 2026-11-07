@@ -32,7 +32,7 @@ public class PlayerInputReader : MonoBehaviour
     private void Awake()
     {
         player = GetComponent<PlayerController>();
-        playerWeapon = GetComponent<PlayerWeapon>();
+        playerWeapon = GetComponent<PlayerWeapon>();       
     }
 
     private void Update()
@@ -56,6 +56,7 @@ public class PlayerInputReader : MonoBehaviour
             {
                 if (!player.PlayerStamina.IsTired(10)) dodgeTime = Time.time;
             }
+            playerWeapon.PerformAttack?.Invoke(player.dashDuration, AttackType.Dash);
         }
         if (kb.fKey.wasPressedThisFrame) parryTime = Time.time;
         if (mouse != null) ReadAttackButton(mouse.leftButton);
@@ -77,8 +78,15 @@ public class PlayerInputReader : MonoBehaviour
 
         if (released)
         {
-            if (held < tapMaxTime) attackTime = Time.time; // bấm nhanh
-            else FireHeavy();                // giữ chưa tới max: lực theo thời gian giữ
+            if (held < tapMaxTime)
+            {
+                attackTime = Time.time; // bấm nhanh
+                playerWeapon.PerformAttack?.Invoke(playerWeapon.CurrentWeaponEquipped.NormalAttack.Duration, AttackType.Normal);
+            }
+            else
+            {
+                FireHeavy();                // giữ chưa tới max: lực theo thời gian giữ
+            }
             lmbPressTime = -1f;
         }
         else if (autoReleaseAtFullCharge && held >= fullChargeTime)
@@ -91,6 +99,7 @@ public class PlayerInputReader : MonoBehaviour
     private void FireHeavy()
     {
         heavyAttackTime = Time.time;
+        playerWeapon.PerformAttack?.Invoke(playerWeapon.CurrentWeaponEquipped.HeavyAttack.Duration, AttackType.Heavy);
     }
     // Consume = lấy và xoá, tránh 1 lần bấm kích hoạt 2 lần
     public bool ConsumeAttack() => Consume(ref attackTime);

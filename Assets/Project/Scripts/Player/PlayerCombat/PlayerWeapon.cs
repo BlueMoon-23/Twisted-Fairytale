@@ -1,3 +1,4 @@
+﻿using System;
 using UnityEngine;
 
 public class PlayerWeapon : MonoBehaviour
@@ -6,6 +7,9 @@ public class PlayerWeapon : MonoBehaviour
     public PlayerWeaponData CurrentWeaponEquipped { get; private set; }
     public PlayerController player { get; private set; }
     private float ultimateReadyTime = -1f;
+
+    // Phát sự kiện cho cooldownbar
+    public Action<float, AttackType> PerformAttack;
     private void Awake()
     {
         player = GetComponent<PlayerController>();
@@ -30,13 +34,14 @@ public class PlayerWeapon : MonoBehaviour
     {
         if (Time.time >= ultimateReadyTime)
         {
-            HitDealer attackSpawned = Object.Instantiate(player.ultimateAttack.Prefab, player.AttackHitboxCenter, Quaternion.identity, player.transform);
+            HitDealer attackSpawned = Instantiate(player.ultimateAttack.Prefab, player.AttackHitboxCenter, Quaternion.identity, player.transform);
             attackSpawned.Init(player.gameObject, player.ultimateAttack.Damage, player.attackHitMask, CurrentWeaponEquipped.UltimateAOELifespan);
             ultimateReadyTime = Time.time + CurrentWeaponEquipped.UltimateCooldown;
             if (attackSpawned.TryGetComponent(out MovingProjectile projectile))
             {
-                projectile.Launch(player.Facing, 0.5f);
+                projectile.Launch(player.Attack.AimForAttack(), 0.5f);
             }
+            PerformAttack?.Invoke(CurrentWeaponEquipped.UltimateCooldown, AttackType.Ultimate);
         }
     }
 }

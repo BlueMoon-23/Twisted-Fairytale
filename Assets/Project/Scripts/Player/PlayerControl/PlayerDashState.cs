@@ -10,7 +10,7 @@ public class PlayerDashState : PlayerState
         base.Enter();
         player.UpdateFacingFromInput();
         dir = IsoDirection.ToVector(player.Facing);
-        player.PlayAnimation("Jump", restart: true);
+        player.PlayAnimation("Dash", restart: true);
         player.PlayerStamina.ConsumeStamina(10);
         player.currentStateName = "Dash";
     }

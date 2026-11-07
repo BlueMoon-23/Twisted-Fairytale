@@ -5,9 +5,10 @@ using UnityEngine;
 /// Enemy dí theo BaseEnemy.TargetPlayer.
 ///   Nhìn thẳng thấy player (không tường chắn) -> chạy thẳng tới.
 ///   Bị chắn -> hỏi PathGrid tìm đường vòng (A*), đi theo từng điểm, định kỳ tìm lại vì player di chuyển.
-/// Cần PathGrid trong scene; không có thì chỉ chạy thẳng.
+/// Mọi bước di chuyển đều được chặn bởi vật cản trong PathGrid.ObstacleMask,
+/// nên kể cả khi collider của enemy là trigger, enemy vẫn không đi xuyên vật cản.
+/// Cần PathGrid trong scene; không có thì chỉ chạy thẳng và không chặn vật cản.
 /// </summary>
-[RequireComponent(typeof(Rigidbody2D), typeof(BaseEnemy))]
 public class EnemyChase : MonoBehaviour
 {
     [SerializeField] private float moveSpeed = 2.5f;
@@ -17,14 +18,14 @@ public class EnemyChase : MonoBehaviour
     [SerializeField] private float repathInterval = 0.25f;
     [Tooltip("Tới gần điểm trên đường cỡ này thì chuyển sang điểm kế")]
     [SerializeField] private float waypointTolerance = 0.1f;
-    [Tooltip("Phải khớp isoYScale của PlayerController để tốc độ trên màn hình giống nhau")]
+    [Tooltip("Phải khớp isoYScale của PlayerMovement để tốc độ trên màn hình giống nhau")]
     [SerializeField] private float isoYScale = 0.5f;
+    [Tooltip("Khoảng hở giữ lại để không dính sát vào vật cản")]
+    [SerializeField] private float skinWidth = 0.02f;
     [SerializeField] private bool drawPath = true;
 
     public bool IsMoving { get; private set; }
-    /// <summary>Hướng màn hình đang đi, dùng cho Facing/animation: IsoDirection.FromVector(MoveDirection).</summary>
     public Vector2 MoveDirection { get; private set; }
-    /// <summary>true khi đang đi đường vòng (bị chắn), false khi chạy thẳng hoặc đứng yên.</summary>
     public bool IsDetouring => pathIndex < path.Count;
 
     private Rigidbody2D rb;
@@ -45,44 +46,40 @@ public class EnemyChase : MonoBehaviour
     {
         ClearPath();
         IsMoving = false;
+        if (rb != null) rb.linearVelocity = Vector2.zero; // tắt component thì không trượt tiếp
     }
 
     private void FixedUpdate()
     {
         PlayerController target = enemy.TargetPlayer;
         if (target == null || target.IsDead || enemy.IsDead) { Stop(); return; }
-
         Vector2 pos = rb.position;
         Vector2 goal = target.Rb.position;
-
         if ((goal - pos).sqrMagnitude <= stopDistance * stopDistance) { Stop(); return; }
-
         PathGrid grid = PathGrid.Instance;
-
-        // 1. Không có gì chắn: chạy thẳng, bỏ đường vòng cũ
         if (grid == null || grid.HasClearPath(pos, goal))
         {
             ClearPath();
             MoveToward(goal);
             return;
         }
-
-        // 2. Bị chắn: tìm đường vòng (giới hạn tần suất vì A* tốn hơn raycast)
-        if (!IsDetouring || Time.time >= nextRepathTime)
+        if (Time.time >= nextRepathTime)
         {
             nextRepathTime = Time.time + repathInterval;
             pathIndex = 0;
             if (!grid.FindPath(pos, goal, path))
             {
-                Stop(); // không có đường (player ở chỗ kín): đứng chờ, lần sau tìm lại
+                Stop();
                 return;
             }
         }
-
-        // Bỏ qua các điểm đã tới
+        else if (!IsDetouring)
+        {
+            Stop();
+            return;
+        }
         float tol = waypointTolerance * waypointTolerance;
         while (pathIndex < path.Count && (path[pathIndex] - pos).sqrMagnitude <= tol) pathIndex++;
-
         if (pathIndex < path.Count) MoveToward(path[pathIndex]);
         else MoveToward(goal);
     }
@@ -91,13 +88,36 @@ public class EnemyChase : MonoBehaviour
     {
         Vector2 worldDir = point - rb.position;
         if (worldDir.sqrMagnitude < 0.000001f) { Stop(); return; }
-
-        // Đổi sang hướng màn hình rồi ép iso lại, giống PlayerController.MoveInDirection:
-        // giữ đúng hướng tới điểm đích, còn tốc độ đi dọc trên màn hình khớp với player.
         Vector2 screenDir = new Vector2(worldDir.x, worldDir.y / isoYScale).normalized;
         MoveDirection = screenDir;
-        rb.linearVelocity = IsoDirection.ToIso(screenDir, isoYScale) * moveSpeed;
-        IsMoving = true;
+        Vector2 v = BlockByObstacles(IsoDirection.ToIso(screenDir, isoYScale) * moveSpeed);
+        rb.linearVelocity = v;
+        IsMoving = v.sqrMagnitude > 0.000001f;
+    }
+
+    // Giống PlayerMovement: chạm vật cản thì tiến sát rồi trượt dọc mặt vật cản, kẹt góc thì dừng.
+    // Dùng chung obstacleMask và agentRadius với PathGrid để đường tìm được và cách đi khớp nhau.
+    private Vector2 BlockByObstacles(Vector2 v)
+    {
+        PathGrid grid = PathGrid.Instance;
+        if (grid == null || grid.ObstacleMask.value == 0) return v;
+
+        for (int i = 0; i < 2; i++)
+        {
+            if (v.sqrMagnitude < 0.000001f) return Vector2.zero;
+
+            float dist = v.magnitude * Time.fixedDeltaTime + skinWidth;
+            RaycastHit2D hit = Physics2D.CircleCast(rb.position, grid.AgentRadius, v.normalized, dist, grid.ObstacleMask);
+
+            // Không chạm gì: đi thoải mái. distance = 0: đang kẹt sẵn trong vật cản, cho đi để thoát ra
+            if (hit.collider == null || hit.distance <= 0f) return v;
+
+            Vector2 n = hit.normal;
+            float into = -Vector2.Dot(v, n);
+            float allowed = Mathf.Max(0f, hit.distance - skinWidth) / Time.fixedDeltaTime;
+            if (into > allowed) v += (into - allowed) * n;
+        }
+        return Vector2.zero;
     }
 
     private void Stop()

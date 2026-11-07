@@ -13,7 +13,7 @@ public class PlayerController : MonoBehaviour, IRespawnable
     // Dash / Dodge
     [Header("Dash (C khi đang Run)")]
     public float dashSpeed = 9f;
-    public float dashDuration = 0.5f;
+    public float dashDuration = 0.333f;
     [Header("Dodge (C khi Idle/Walk)")]
     public float dodgeSpeed = 6f;
     public float dodgeDuration = 0.3f;
@@ -48,17 +48,9 @@ public class PlayerController : MonoBehaviour, IRespawnable
     [SerializeField] private bool autoRespawn = true;
     [Tooltip("Số giây chờ thêm sau DeathSequenceFinished rồi mới hồi sinh")]
     [SerializeField] private float respawnDelay = 0f;
-    // Isometric directions
-    [Header("Isometric")]
-    [Tooltip("0.5 cho isometric tile 2:1. 1 = top-down thường")]
-    [SerializeField] private float isoYScale = 0.5f;
-    [Tooltip("Ép hướng di chuyển về đúng 8 hướng để khớp animation")]
-    [SerializeField] private bool snapTo8Directions = true;
+    // Input
+    [Header("Input")]
     [SerializeField] private float inputDeadzone = 0.2f;
-    [Header("Facing")]
-    [SerializeField] private Dir8 startFacing = Dir8.S;
-    [Tooltip("Thả 2 phím chéo không cùng lúc vẫn giữ hướng chéo")]
-    [SerializeField] private float diagonalReleaseGrace = 0.08f;
     // Animation
     [Header("Animation")]
     [SerializeField] private Animator animator;
@@ -66,12 +58,14 @@ public class PlayerController : MonoBehaviour, IRespawnable
     [Header("Debug (read only)")]
     [field: SerializeField] public string currentStateName { get; set; }
 
-    public Rigidbody2D Rb { get; private set; }
+    public PlayerMovement Movement { get; private set; }
+    public PlayerAttack Attack { get; private set; }
+    public Rigidbody2D Rb => Movement.Rb;
     public PlayerInputReader Input { get; private set; }
     public Animator Animator => animator;
     public PlayerStateMachine Machine { get; private set; }
-    public Dir8 Facing { get; private set; }
-    public float IsoYScale => isoYScale; // projectile dùng để bay đúng tỉ lệ iso với nhân vật
+    public Dir8 Facing => Movement.Facing;
+    public float IsoYScale => Movement.IsoYScale; // projectile dùng để bay đúng tỉ lệ iso với nhân vật
 
     // ===== States =====
     public PlayerIdleState IdleState { get; private set; }
@@ -96,9 +90,6 @@ public class PlayerController : MonoBehaviour, IRespawnable
     public Vector2 InitialPosition { get; private set; }
     public void Respawn(Vector2 position) => Revive(position);
 
-    private Dir8 lastDiagonal;
-    private float lastDiagonalTime = float.NegativeInfinity;
-
     // Tham số blend tree (Float) trong Animator
     private static readonly int FaceXParam = Animator.StringToHash("FaceX");
     private static readonly int FaceYParam = Animator.StringToHash("FaceY");
@@ -108,9 +99,8 @@ public class PlayerController : MonoBehaviour, IRespawnable
 
     private void Awake()
     {
-        Rb = GetComponent<Rigidbody2D>();
-        Rb.gravityScale = 0f;
-        Rb.freezeRotation = true;
+        Movement = GetComponent<PlayerMovement>();
+        Attack = GetComponent<PlayerAttack>();
         Input = GetComponent<PlayerInputReader>();
         if (animator == null) animator = GetComponentInChildren<Animator>();
         cam = Camera.main;
@@ -130,7 +120,6 @@ public class PlayerController : MonoBehaviour, IRespawnable
 
     private void Start()
     {
-        Facing = startFacing;
         Machine.Initialize(IdleState);
         DeathSequenceFinished += HandleDeathSequenceFinished;
     }
@@ -168,41 +157,26 @@ public class PlayerController : MonoBehaviour, IRespawnable
         return RunState;
     }
 
-    // ===== Facing =====
+    // ===== Facing (chuyển tiếp sang PlayerMovement, các state không phải sửa) =====
     public void UpdateFacingFromInput()
     {
         if (!HasMoveInput) return;
-        Facing = IsoDirection.FromVector(RawMove);
-        if (IsoDirection.IsDiagonal(Facing))
-        {
-            lastDiagonal = Facing;
-            lastDiagonalTime = Time.time;
-        }
+        Movement.UpdateFacing(RawMove);
     }
 
     /// <summary>Gọi khi dừng lại: nếu vừa thả phím chéo lệch nhịp thì khôi phục hướng chéo.</summary>
-    public void ResolveFacingOnStop()
-    {
-        if (!IsoDirection.IsDiagonal(Facing) && Time.time - lastDiagonalTime <= diagonalReleaseGrace)
-            Facing = lastDiagonal;
-    }
+    public void ResolveFacingOnStop() => Movement.ResolveFacingOnStop();
 
-    public void SetFacing(Dir8 dir) => Facing = dir;
+    public void SetFacing(Dir8 dir) => Movement.SetFacing(dir);
 
-    // ===== Movement =====
-    public void MoveInFacingOrInput(float speed)
-    {
-        Vector2 dir = snapTo8Directions ? IsoDirection.ToVector(Facing) : RawMove.normalized;
-        SetVelocity(IsoDirection.ToIso(dir, isoYScale) * speed);
-    }
+    // ===== Movement (chuyển tiếp sang PlayerMovement) =====
+    public void MoveInFacingOrInput(float speed) => Movement.MoveInFacingOrInput(RawMove, speed);
 
     /// <summary>Dash/knockback dùng: di chuyển theo 1 hướng màn hình bất kỳ.</summary>
-    public void MoveInDirection(Vector2 screenDir, float speed)
-        => SetVelocity(IsoDirection.ToIso(screenDir.normalized, isoYScale) * speed);
+    public void MoveInDirection(Vector2 screenDir, float speed) => Movement.MoveInDirection(screenDir, speed);
 
-    // Unity 6: linearVelocity. Unity 2022 trở xuống: đổi thành Rb.velocity
-    public void SetVelocity(Vector2 v) => Rb.linearVelocity = v;
-    public void StopMovement() => Rb.linearVelocity = Vector2.zero;
+    public void SetVelocity(Vector2 v) => Movement.SetVelocity(v);
+    public void StopMovement() => Movement.StopMovement();
 
     // ===== Dash/Dodge =====
     public bool TryEvade()
@@ -217,7 +191,7 @@ public class PlayerController : MonoBehaviour, IRespawnable
 
     // ===== Attack/Parry =====
     public Vector2 AttackHitboxCenter
-        => Rb.position + IsoDirection.ToIso(IsoDirection.ToVector(Facing), isoYScale) * attackReach;
+        => Rb.position + IsoDirection.ToIso(IsoDirection.ToVector(Facing), IsoYScale) * attackReach;
 
     /// <summary>Đòn ứng với nút vừa bấm (heavy ưu tiên), null nếu không bấm gì.</summary>
     public PlayerAttackData ConsumeAttackInput()
@@ -247,9 +221,8 @@ public class PlayerController : MonoBehaviour, IRespawnable
     public void Revive(Vector2 position)
     {
         if (!IsDead) return;
-        Rb.position = position;
-        transform.position = position;
-        Facing = startFacing;
+        Movement.Teleport(position);
+        Movement.ResetFacing();
         Machine.ChangeState(IdleState);
         PlayerHP.RegainHP(PlayerHP.GetMaxHP());
     }

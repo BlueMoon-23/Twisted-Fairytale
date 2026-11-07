@@ -21,16 +21,15 @@ public class PlayerAttackState : PlayerState
     {
         base.Enter(); // reset StateTime
 
-        // Đánh theo hướng đang bấm; đứng yên thì đánh theo hướng đang nhìn.
-        // Giữa các nhát combo đổi phím hướng là xoay được đòn tiếp theo.
-        player.UpdateFacingFromInput();
+        // Có enemy trong tầm: quay về phía nó (làm tròn 8 hướng). Không có: đánh theo hướng đang bấm,
+        // đứng yên thì theo hướng đang nhìn. Mỗi nhát combo chọn lại nên vẫn đổi hướng được giữa combo.
+        dir = player.Attack.AimForAttack();
 
-        dir = IsoDirection.ToVector(player.Facing);
         hasSpawnedAttack = false;
         player.PlayAnimation("Punch", restart: true);
         player.currentStateName = "Attack";
     }
-    
+
     public override void LogicUpdate()
     {
         base.LogicUpdate();
@@ -56,7 +55,8 @@ public class PlayerAttackState : PlayerState
     }
     public override void PhysicsUpdate()
     {
-        if (StateTime < current.HitEnd) player.MoveInDirection(dir, current.LungeSpeed);
+        // Đã sát mục tiêu thì đứng lại đánh, không lướt xuyên qua enemy
+        if (StateTime < current.HitEnd && player.Attack.ShouldLunge()) player.MoveInDirection(dir, current.LungeSpeed);
         else player.StopMovement();
     }
     public override void Exit()

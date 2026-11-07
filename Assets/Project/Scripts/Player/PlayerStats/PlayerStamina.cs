@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using UnityEngine;
 
 /// <summary>
@@ -12,7 +13,7 @@ public class PlayerStamina : MonoBehaviour
     [SerializeField] private float RegainSpeed;
     [SerializeField] private float RegainCooldown;
     [SerializeField] private float regenDelay = 0.6f; // chờ sau lần dùng gần nhất
-
+    public Action<float, float> StaminaChanged;
     private float lastUseTime = float.NegativeInfinity;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -36,11 +37,13 @@ public class PlayerStamina : MonoBehaviour
         Stamina -= amount;
         lastUseTime = Time.time;
         if (Stamina < 0) Stamina = 0;
+        StaminaChanged?.Invoke(Stamina, MaxStamina);
     }
     public void RegainStamina(float amount)
     {
         Stamina += amount;
         if (Stamina >= MaxStamina) Stamina = MaxStamina;
+        StaminaChanged?.Invoke(Stamina, MaxStamina);
     }
     private IEnumerator RegainLoop()
     {
