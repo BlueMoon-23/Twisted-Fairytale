@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8627df608641b241b410bf5e2ade1d9, type: 3}
   m_Name: SwordNormalAttack
   m_EditorClassIdentifier: 
-  AnimName: Punch
-  Duration: 0.4
-  HitStart: 0.12
-  HitEnd: 0.22
+  AnimName: Sword_Normal
+  Duration: 0.417
+  HitStart: 0.1
+  HitEnd: 0.3
   LungeSpeed: 1.5
   Damage: 1
   Prefab: {fileID: 1606457656485342007, guid: bbeafece2f11a0b47b3372894909c294, type: 3}

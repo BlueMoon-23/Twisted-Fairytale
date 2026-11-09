@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8627df608641b241b410bf5e2ade1d9, type: 3}
   m_Name: GreatswordHeavyAttack
   m_EditorClassIdentifier: 
-  AnimName: Punch
+  AnimName: Greatsword_Heavy
   Duration: 0.5
   HitStart: 0.12
   HitEnd: 0.22

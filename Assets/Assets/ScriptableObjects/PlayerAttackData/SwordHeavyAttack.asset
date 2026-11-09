@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8627df608641b241b410bf5e2ade1d9, type: 3}
   m_Name: SwordHeavyAttack
   m_EditorClassIdentifier: 
-  AnimName: Punch
-  Duration: 0.5
-  HitStart: 0.12
-  HitEnd: 0.22
-  LungeSpeed: 1.5
+  AnimName: Sword_Heavy
+  Duration: 0.75
+  HitStart: 0.6
+  HitEnd: 0.7
+  LungeSpeed: 4
   Damage: 2
   Prefab: {fileID: 2171183415028546117, guid: 0fc91729b3ed4b24fa8ab4aae9feb06d, type: 3}

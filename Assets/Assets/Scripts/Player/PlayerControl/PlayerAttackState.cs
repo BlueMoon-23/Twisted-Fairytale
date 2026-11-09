@@ -26,7 +26,7 @@ public class PlayerAttackState : PlayerState
         dir = player.Attack.AimForAttack();
 
         hasSpawnedAttack = false;
-        player.PlayAnimation("Punch", restart: true);
+        player.PlayAnimation(current.AnimName, restart: true);
         player.currentStateName = "Attack";
     }
 
