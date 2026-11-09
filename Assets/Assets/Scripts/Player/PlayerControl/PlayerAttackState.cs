@@ -37,7 +37,9 @@ public class PlayerAttackState : PlayerState
         if (!hasSpawnedAttack && StateTime >= current.HitStart)
         {
             hasSpawnedAttack = true;
-            attackSpawned = Object.Instantiate(current.Prefab, player.AttackHitboxCenter, Quaternion.identity, player.transform);
+            Vector2 forward = IsoDirection.ToIso(IsoDirection.ToVector(player.Facing), player.IsoYScale);
+            Vector2 spawnPos = player.AttackHitboxCenter + forward * current.SpawnForward;
+            attackSpawned = Object.Instantiate(current.Prefab, spawnPos, current.GetRotation(player.Facing), player.transform);
             attackSpawned.Init(player.gameObject, current.Damage, player.attackHitMask,
             current.HitEnd - current.HitStart);
         }

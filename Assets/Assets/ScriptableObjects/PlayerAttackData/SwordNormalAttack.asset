@@ -18,4 +18,22 @@ MonoBehaviour:
   HitEnd: 0.3
   LungeSpeed: 1.5
   Damage: 1
-  Prefab: {fileID: 1606457656485342007, guid: bbeafece2f11a0b47b3372894909c294, type: 3}
+  SpawnForward: 2
+  Prefab: {fileID: 7177234309779502079, guid: 1ff259e84a442094dbdf32fd8e2a93b7, type: 3}
+  PrefabDirections:
+  - direction: 0
+    rotation: {x: 0, y: 45, z: 90}
+  - direction: 1
+    rotation: {x: -60, y: 90, z: 45}
+  - direction: 2
+    rotation: {x: -180, y: 210, z: -90}
+  - direction: 3
+    rotation: {x: -60, y: 270, z: 45}
+  - direction: 4
+    rotation: {x: -45, y: -45, z: 90}
+  - direction: 5
+    rotation: {x: 0, y: 225, z: 120}
+  - direction: 6
+    rotation: {x: -180, y: 30, z: -90}
+  - direction: 7
+    rotation: {x: 30, y: 135, z: 90}

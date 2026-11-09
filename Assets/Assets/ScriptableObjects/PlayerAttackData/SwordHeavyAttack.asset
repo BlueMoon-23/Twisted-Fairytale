@@ -14,8 +14,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   AnimName: Sword_Heavy
   Duration: 0.75
-  HitStart: 0.6
-  HitEnd: 0.7
+  HitStart: 0.2
+  HitEnd: 0.75
   LungeSpeed: 4
   Damage: 2
-  Prefab: {fileID: 2171183415028546117, guid: 0fc91729b3ed4b24fa8ab4aae9feb06d, type: 3}
+  SpawnForward: 4
+  Prefab: {fileID: 5242934420031191614, guid: 4a577bcb4fb83e34cb3000ee31decc99, type: 3}
+  PrefabDirections:
+  - direction: 0
+    rotation: {x: 0, y: 90, z: 90}
+  - direction: 1
+    rotation: {x: 315, y: 90, z: 90}
+  - direction: 2
+    rotation: {x: -90, y: 90, z: 90}
+  - direction: 3
+    rotation: {x: 225, y: 90, z: 90}
+  - direction: 4
+    rotation: {x: 180, y: 90, z: 90}
+  - direction: 5
+    rotation: {x: 135, y: 90, z: 90}
+  - direction: 6
+    rotation: {x: 90, y: 90, z: 90}
+  - direction: 7
+    rotation: {x: 45, y: 90, z: 90}
