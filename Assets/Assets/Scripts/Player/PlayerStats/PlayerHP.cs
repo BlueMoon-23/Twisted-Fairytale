@@ -13,13 +13,13 @@ public class PlayerHP : MonoBehaviour, IDamageable, IHealth
     public bool IsPlayer => true;
     private PlayerController player;
     public event Action<float, float, bool> HealthChanged;
-    public SpriteRenderer PlayerSpriteRenderer { get; set; }
+    [field: SerializeField] public SpriteRenderer PlayerSpriteRenderer { get; set; }
     private Coroutine hurtRoutine;
     private WaitForSeconds hurtWait = new WaitForSeconds(0.15f);
     private void Awake()
     {
         player = GetComponent<PlayerController>();
-        PlayerSpriteRenderer = GetComponent<SpriteRenderer>();
+        if (PlayerSpriteRenderer == null) PlayerSpriteRenderer = GetComponent<SpriteRenderer>();
     }
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()

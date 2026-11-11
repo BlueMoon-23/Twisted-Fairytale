@@ -13,9 +13,11 @@ MonoBehaviour:
   m_Name: SwordUltimateAttack
   m_EditorClassIdentifier: 
   AnimName: Sword_Ultimate
-  Duration: 1
-  HitStart: 0.12
-  HitEnd: 0.22
-  LungeSpeed: 1.5
+  Duration: 0.667
+  HitStart: 0.1
+  HitEnd: 0.9
+  LungeSpeed: 0
   Damage: 15
+  SpawnForward: 4
   Prefab: {fileID: 7523429129607922096, guid: 403b8e5df9c298a46b7fdb0a18ed2ef9, type: 3}
+  PrefabDirections: []

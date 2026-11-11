@@ -32,23 +32,15 @@ public class PlayerWeapon : MonoBehaviour
     }
     public void PerformUltimate()
     {
-        if (Time.time >= ultimateReadyTime)
-        {
-            Transform target = player.Attack.CurrentTarget;
-            Vector2 dir = target != null
-                ? (Vector2)target.position - player.Rb.position                                 // có mục tiêu: chĩa thẳng vào nó
-                : IsoDirection.ToIso(IsoDirection.ToVector(player.Facing), player.IsoYScale);   // không có: bắn theo hướng đang nhìn
+        if (Time.time < ultimateReadyTime || player.ultimateAttack == null) return;
 
-            float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg - 90f; // -90 vì beam nằm dọc trục Y
-            Quaternion rot = Quaternion.Euler(0f, 0f, angle);
-            HitDealer attackSpawned = Instantiate(player.ultimateAttack.Prefab, player.AttackHitboxCenter, rot, player.transform);
-            attackSpawned.Init(player.gameObject, player.ultimateAttack.Damage, player.attackHitMask, CurrentWeaponEquipped.UltimateAOELifespan);
-            ultimateReadyTime = Time.time + CurrentWeaponEquipped.UltimateCooldown;
-            if (attackSpawned.TryGetComponent(out MovingProjectile projectile))
-            {
-                projectile.Launch(player.Attack.AimForAttack(), 0.5f);
-            }
-            PerformAttack?.Invoke(CurrentWeaponEquipped.UltimateCooldown, AttackType.Ultimate);
-        }
+        // Chỉ tung ultimate khi đang đứng hoặc chạy: không cắt ngang dash, dodge, lúc chết...
+        var cur = player.Machine.Current;
+        if (cur != player.IdleState && cur != player.RunState) return;
+
+        ultimateReadyTime = Time.time + CurrentWeaponEquipped.UltimateCooldown;
+        player.AttackState.SetAttack(player.ultimateAttack, ultimate: true);
+        player.Machine.ChangeState(player.AttackState);
+        PerformAttack?.Invoke(CurrentWeaponEquipped.UltimateCooldown, AttackType.Ultimate);
     }
 }

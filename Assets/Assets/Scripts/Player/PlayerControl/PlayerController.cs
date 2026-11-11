@@ -75,6 +75,7 @@ public class PlayerController : MonoBehaviour, IRespawnable
     public PlayerDodgeState DodgeState { get; private set; }
     public PlayerParryState ParryState { get; private set; }
     public PlayerDieState DieState { get; private set; }
+    public PlayerReviveState ReviveState { get; private set; }
 
     // ===== Stats =====
     public PlayerHP PlayerHP { get; private set; }
@@ -113,6 +114,7 @@ public class PlayerController : MonoBehaviour, IRespawnable
         DodgeState = new PlayerDodgeState(this, Machine);
         ParryState = new PlayerParryState(this, Machine);
         DieState = new PlayerDieState(this, Machine);
+        ReviveState = new PlayerReviveState(this, Machine);
         PlayerHP = GetComponent<PlayerHP>();
         PlayerStamina = GetComponent<PlayerStamina>();
     }
@@ -225,8 +227,9 @@ public class PlayerController : MonoBehaviour, IRespawnable
         if (!IsDead) return;
         Movement.Teleport(position);
         Movement.ResetFacing();
-        Machine.ChangeState(IdleState);
+        Machine.ChangeState(ReviveState);
         PlayerHP.RegainHP(PlayerHP.GetMaxHP());
+        IsInvulnerable = true;
     }
 
     // Vị trí hồi sinh hiện tại: checkpoint nếu có SpawnerManager, không thì chỗ đứng lúc vào scene

@@ -18,7 +18,7 @@ public class PlayerAttackData : ScriptableObject
     public float HitStart = 0.12f;
     public float HitEnd = 0.22f;
     public float LungeSpeed = 1.5f;
-    public int Damage = 1;
+    public float Damage = 1;
     public float SpawnForward = 0f;
     public HitDealer Prefab;
     public AttackDirection[] PrefabDirections;
