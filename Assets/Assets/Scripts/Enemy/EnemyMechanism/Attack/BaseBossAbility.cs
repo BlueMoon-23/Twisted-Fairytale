@@ -26,7 +26,7 @@ public class BaseBossAbility : MonoBehaviour
         {
             if (enemy.TargetPlayer != null)
             {
-                HitDealer attackSpawned = Object.Instantiate(Prefab, enemy.TargetPlayer.AttackHitboxCenter, Quaternion.identity);
+                HitDealer attackSpawned = Object.Instantiate(Prefab, enemy.TargetPlayer.AttackHitboxCenter, Prefab.transform.rotation);
                 attackSpawned.Init(enemy.gameObject, Prefab.damage, enemy.attackHitMask, 1f);
                 yield return new WaitForSeconds(Cooldown);
             }
