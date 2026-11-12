@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -14,6 +15,8 @@ public class EnemyChase : MonoBehaviour
     [SerializeField] private float moveSpeed = 2.5f;
     [Tooltip("Tới gần player cỡ này thì dừng (để tấn công)")]
     [SerializeField] private float stopDistance = 0.6f;
+    [Tooltip("Dừng tấn công trong bao lâu")]
+    [SerializeField] private float stopInterval = 1f;
     [Tooltip("Bao lâu tìm lại đường một lần khi đang đi vòng")]
     [SerializeField] private float repathInterval = 0.25f;
     [Tooltip("Tới gần điểm trên đường cỡ này thì chuyển sang điểm kế")]
@@ -23,7 +26,7 @@ public class EnemyChase : MonoBehaviour
     [Tooltip("Khoảng hở giữ lại để không dính sát vào vật cản")]
     [SerializeField] private float skinWidth = 0.02f;
     [SerializeField] private bool drawPath = true;
-
+    private float pauseUntil; // tới mốc này mới được đi tiếp
     public bool IsMoving { get; private set; }
     public Vector2 MoveDirection { get; private set; }
     public bool IsDetouring => pathIndex < path.Count;
@@ -51,6 +54,7 @@ public class EnemyChase : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (Time.time < pauseUntil) { Stop(); return; }
         PlayerController target = enemy.TargetPlayer;
         if (target == null || target.IsDead || enemy.IsDead) { Stop(); return; }
         Vector2 pos = rb.position;
@@ -125,7 +129,12 @@ public class EnemyChase : MonoBehaviour
         rb.linearVelocity = Vector2.zero;
         IsMoving = false;
     }
-
+    public IEnumerator DoAttack()
+    {
+        pauseUntil = Time.time + stopInterval; // FixedUpdate thấy đang tạm dừng thì đứng yên
+        Stop();
+        yield return new WaitForSeconds(stopInterval);
+    }
     private void ClearPath()
     {
         path.Clear();

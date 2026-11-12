@@ -9,7 +9,7 @@ public class BaseEnemy : MonoBehaviour, IRespawnable
     [SerializeField] private float respawnCooldown = 5f;
     [Tooltip("Spawner riêng của enemy này (bỏ tick isCheckpoint). Trống = hồi sinh tại vị trí đặt ban đầu")]
     [SerializeField] private Spawner homeSpawner;
-
+    private EnemyChase enemyChase;
     // ===== IRespawnable =====
     public bool IsDead { get; protected set; }
     public bool UsesCheckpoint => false;       // enemy không bao giờ đổi checkpoint
@@ -19,6 +19,7 @@ public class BaseEnemy : MonoBehaviour, IRespawnable
     protected virtual void Awake()
     {
         InitialPosition = transform.position;
+        enemyChase = GetComponent<EnemyChase>();
     }
 
     public virtual void Die()
@@ -44,5 +45,12 @@ public class BaseEnemy : MonoBehaviour, IRespawnable
         gameObject.SetActive(true);
 
         if (TryGetComponent(out EnemyHP hp)) hp.RegainHP(hp.MaxHealth);
+    }
+    public void StopToAttack()
+    {
+        if (enemyChase != null)
+        {
+            enemyChase.StartCoroutine(enemyChase.DoAttack());
+        }
     }
 }
