@@ -43,6 +43,6 @@ public class BaseEnemy : MonoBehaviour, IRespawnable
         IsDead = false;
         gameObject.SetActive(true);
 
-        if (TryGetComponent(out EnemyHP hp)) hp.RegainHP(hp.GetMaxHP());
+        if (TryGetComponent(out EnemyHP hp)) hp.RegainHP(hp.MaxHealth);
     }
 }
